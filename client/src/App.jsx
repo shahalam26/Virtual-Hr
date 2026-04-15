@@ -13,6 +13,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ResumeUpload } from './Pages/ResumeUpload';
 import ChatPage from './Pages/ChatPage';
 import VoiceInterviewPage from "./Pages/VoiceInterviewPage";
+import VideoInterviewPage from "./Pages/VideoInterviewPage";
+import ProgressTracker from "./Pages/ProgressTracker";
 
 
 
@@ -34,7 +36,8 @@ function AppRoutes() {
         <Route path="/pricing" element={<Home />} />
         <Route path="/about" element={<Home />} />
         <Route path="/interview/voice" element={<VoiceInterviewPage />} />
-        <Route path="/interview/video" element={<ChatPage />} />
+        <Route path="/interview/video" element={<VideoInterviewPage />} />
+        <Route path="/progress" element={<ProgressTracker />} />
       </Routes>
     </>
   );

@@ -8,6 +8,7 @@ function ChatPage() {
   const [resumeText, setResumeText] = useState("");
   const [started, setStarted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [evaluation, setEvaluation] = useState(null);
   const chatRef = useRef(null);
   const userId = "user123";
 
@@ -33,7 +34,7 @@ function ChatPage() {
   const startInterview = async () => {
     try {
       setIsTyping(true);
-      const { data } = await api.post("/api/start-interview", { resumeText, userId });
+      const { data } = await api.post("/api/interview/start", { resumeText });
       setMessages([{ role: "assistant", content: data.reply }]);
       setStarted(true);
     } catch (error) {
@@ -54,11 +55,14 @@ function ChatPage() {
 
     try {
       setIsTyping(true);
-      const { data } = await api.post("/api/interview", {
-        userId,
+      const { data } = await api.post("/api/interview/reply", {
         message: messageText,
       });
       setMessages([...nextMessages, { role: "assistant", content: data.reply }]);
+      
+      if (data.finished) {
+        setEvaluation(data.evaluation);
+      }
     } catch (error) {
       console.error(error);
       alert(error.response?.data?.error || "Failed to send message");
@@ -162,31 +166,65 @@ function ChatPage() {
             ))}
 
             {isTyping && <TypingIndicator />}
+            
+            {evaluation && (
+              <div className="mt-8 p-6 bg-[#101828]/90 border border-purple-500/30 rounded-xl shadow-lg backdrop-blur-md">
+                <h2 className="text-xl font-bold text-center text-cyan-400 mb-4">Interview Evaluation report</h2>
+                <div className="mb-4">
+                  <p className="text-gray-300">Overall Score:</p>
+                  <div className="w-full bg-gray-800 rounded-full h-3 mt-1">
+                    <div className="bg-gradient-to-r from-pink-500 to-purple-600 h-3 rounded-full" style={{ width: `${evaluation.score}%` }}></div>
+                  </div>
+                  <p className="text-right text-xs mt-1 text-gray-400">{evaluation.score} / 100</p>
+                </div>
+                <div className="mb-3">
+                  <p className="text-green-400 text-sm font-semibold">Strengths:</p>
+                  <ul className="list-disc pl-5 text-sm text-green-200">
+                    {evaluation.strengths?.map((s, i) => <li key={i}>{s}</li>)}
+                  </ul>
+                </div>
+                <div className="mb-3">
+                  <p className="text-red-400 text-sm font-semibold">Areas for Improvement:</p>
+                  <ul className="list-disc pl-5 text-sm text-red-200">
+                    {evaluation.weaknesses?.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
+                </div>
+                {evaluation.improvementsFromLast && (
+                  <div className="mb-2">
+                    <p className="text-purple-400 text-sm font-semibold">Progress Note:</p>
+                    <p className="text-sm text-gray-300">{evaluation.improvementsFromLast}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
           </div>
 
-          <div className="p-4 border-t border-white/6 bg-gradient-to-t from-black/20 to-transparent">
-            <div className="flex gap-3 items-center">
-              <input
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && sendMessage()}
-                placeholder={started ? "Type your response..." : "Start interview to enable chat"}
-                className="flex-1 bg-transparent border border-white/8 rounded-full px-4 py-3 text-white outline-none placeholder:text-gray-400"
-                disabled={!started}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={!started || !input.trim()}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                  !started || !input.trim()
-                    ? "bg-gray-700 text-gray-300 cursor-not-allowed"
-                    : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
-                }`}
-              >
-                Send
-              </button>
+          {!evaluation && (
+            <div className="p-4 border-t border-white/6 bg-gradient-to-t from-black/20 to-transparent">
+              <div className="flex gap-3 items-center">
+                <input
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => event.key === "Enter" && sendMessage()}
+                  placeholder={started ? "Type your response..." : "Start interview to enable chat"}
+                  className="flex-1 bg-transparent border border-white/8 rounded-full px-4 py-3 text-white outline-none placeholder:text-gray-400"
+                  disabled={!started || isTyping}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={!started || !input.trim() || isTyping}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                    !started || !input.trim() || isTyping
+                      ? "bg-gray-700 text-gray-300 cursor-not-allowed"
+                      : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
+                  }`}
+                >
+                  Send
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <style>{`

@@ -1,5 +1,8 @@
 import express from 'express';
-import { getFeedback } from '../controller/resumeFeedbackController.js';
+import { getFeedback, getHistory } from '../controller/resumeFeedbackController.js';
+import { auth } from '../middleware/auth.js';
+
 export const ressumeRouter = express.Router();
 
-ressumeRouter.post("/feedback",getFeedback);
+ressumeRouter.post("/feedback", auth, getFeedback);
+ressumeRouter.get("/history", auth, getHistory);

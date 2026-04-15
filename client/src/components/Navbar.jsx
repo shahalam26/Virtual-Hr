@@ -57,9 +57,15 @@ import { AppContent } from '../context/AppContextValue';
           <div className="w-8 h-8 flex justify-center items-center rounded-full bg-gray-800 cursor-pointer text-gray-100 relative group">
             {userData?.name?.[0]?.toUpperCase() || "U"}
 
-            <div className="absolute hidden group-hover:block top-5 right-0 z-10 bg-white text-black rounded shadow-lg mt-2">
+            <div className="absolute hidden group-hover:block top-5 right-0 z-10 bg-white text-black rounded shadow-lg mt-2 w-32">
               <ul className="text-sm p-2 space-y-1 list-none">
-                <li onClick={logout} className="hover:text-blue-500 cursor-pointer">
+                <li onClick={() => navigate('/progress')} className="hover:text-blue-500 cursor-pointer mb-2">
+                  My Progress
+                </li>
+                <li onClick={() => navigate('/interview/video')} className="hover:text-blue-500 cursor-pointer mb-2">
+                  Video Interview
+                </li>
+                <li onClick={logout} className="hover:text-blue-500 cursor-pointer border-t pt-2">
                   Logout
                 </li>
               </ul>

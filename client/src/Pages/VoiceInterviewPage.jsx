@@ -12,9 +12,17 @@ const VoiceInterviewPage = () => {
   const [evaluation, setEvaluation] = useState(null);
   const recognitionRef = useRef(null);
 
-  useEffect(() => () => {
-    recognitionRef.current?.stop();
-    window.speechSynthesis?.cancel();
+  const [voices, setVoices] = useState([]);
+
+  useEffect(() => {
+    const loadVoices = () => setVoices(window.speechSynthesis.getVoices());
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      recognitionRef.current?.stop();
+      window.speechSynthesis?.cancel();
+    }
   }, []);
 
   const speak = (text, onEnd) => {
@@ -22,7 +30,21 @@ const VoiceInterviewPage = () => {
 
     const speech = new SpeechSynthesisUtterance(text);
     speech.lang = "en-US";
-    speech.rate = 1;
+    speech.pitch = 1.1; // Slightly higher pitch for more humanoid/natural tone
+    speech.rate = 1.0;
+    
+    // Find a proper female voice
+    const femaleVoice = voices.find(v => 
+      v.name.includes("Google UK English Female") || 
+      v.name.includes("Google US English") || 
+      v.name.includes("Zira") || 
+      v.name.includes("Samantha") ||
+      (v.name.toLowerCase().includes("female") && v.lang.startsWith("en"))
+    );
+    
+    if (femaleVoice) {
+      speech.voice = femaleVoice;
+    }
     
     speech.onstart = () => setIsSpeaking(true);
     speech.onend = () => {

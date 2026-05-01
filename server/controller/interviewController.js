@@ -35,10 +35,11 @@ export const startInterview = async (req, res) => {
     
     CRITICAL RULES:
     1. Base your questions on the provided resume.
-    2. Ask exactly 2 questions, ONE BY ONE. Wait for the user's answer before asking the next.
-    3. The MOMENT you receive the user's answer to your 2nd question, you MUST terminate the interview immediately.
-    4. You MUST NOT ask a 3rd question. You MUST NOT ask if they have questions for you.
-    5. To terminate the interview, your VERY NEXT MESSAGE must consist entirely of the following string block (with valid JSON inside). Do not include any greeting or conversational filler before or after it:
+    2. Ask around 5 questions, ONE BY ONE. Wait for the candidate's answer before asking the next.
+    3. You must judge their answers, ask follow-up questions if their answer is weak, and adapt organically like a real interview.
+    4. You will receive the candidate's text answer along with snapshot images of their face taken while they were speaking. You MUST observe their emotions and body language from these images, combine this with their text answer, and use it to form your next question and evaluation. Mention their body language naturally if relevant.
+    5. Once you have asked sufficient questions (around 5-7) and feel you have securely evaluated the candidate, you MUST terminate the interview immediately.
+    6. To terminate the interview, your VERY NEXT MESSAGE must consist entirely of the following string block (with valid JSON inside). Do not include any greeting or conversational filler before or after it:
     
     [END_INTERVIEW]
     \`\`\`json
@@ -96,7 +97,23 @@ export const continueInterview = async (req, res) => {
 
     session.history.push({ role: "user", content: message });
     
-    const result = await session.chat.sendMessage(message.trim());
+    let aiMessage = message.trim();
+    
+    // Construct multimodal parts
+    let parts = [{ text: aiMessage }];
+    if (req.body.images && Array.isArray(req.body.images)) {
+       req.body.images.forEach(base64Image => {
+           parts.push({
+               inlineData: {
+                   mimeType: "image/jpeg",
+                   data: base64Image
+               }
+           });
+       });
+       parts.push({ text: `\n\n[System Note: The above images were captured while the candidate was answering. You MUST analyze their emotion and body language from these images and explicitly mention your observation in your response. (e.g. "I see you're smiling," or "You look a bit nervous, take a breath.")]` });
+    }
+
+    const result = await session.chat.sendMessage(parts);
     let aiReply = result.response.text();
 
     if (aiReply.includes("[END_INTERVIEW]")) {
@@ -153,25 +170,54 @@ export const analyzeVideo = async (req, res) => {
       return res.status(400).json({ error: "Interview ID required." });
     }
 
-    // 1. Read multer file into native Blob
-    const fileBuffer = fs.readFileSync(req.file.path);
-    const videoBlob = new Blob([fileBuffer], { type: req.file.mimetype });
+    // 1. Initialize Google AI File Manager
+    const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY);
     
-    // 2. Prepare Form Data to proxy to Python
-    const formData = new FormData();
-    formData.append("video", videoBlob, req.file.originalname || "video.webm");
-
-    // 3. Request the Python Microservice (Option B Pivot)
-    const pythonResponse = await fetch("http://localhost:5001/analyze-video", {
-      method: "POST",
-      body: formData
+    // 2. Upload the video to Gemini
+    const uploadResult = await fileManager.uploadFile(req.file.path, {
+        mimeType: req.file.mimetype,
+        displayName: "Interview Video",
     });
-
-    if (!pythonResponse.ok) {
-       throw new Error(`Python server error: ${pythonResponse.statusText}`);
+    
+    // 2.5 Wait for video to finish processing
+    let file = await fileManager.getFile(uploadResult.file.name);
+    while (file.state === "PROCESSING") {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        file = await fileManager.getFile(uploadResult.file.name);
     }
-
-    const evaluation = await pythonResponse.json();
+    if (file.state === "FAILED") {
+        throw new Error("Gemini failed to process the video file.");
+    }
+    
+    // 3. Use Gemini to analyze the video
+    const model = getGeminiModel("gemini-1.5-flash"); // Flash is better for multimodal
+    const prompt = `
+    You are an advanced HR Emotion & Body Language Analyzer.
+    Watch the candidate's interview responses.
+    Identify their primary emotion, confidence level, and eye contact.
+    Reply ONLY with valid JSON in this exact format:
+    {
+      "score": <number 0-100 indicating visual confidence>,
+      "feedback": "<detailed string analyzing body language and emotions>"
+    }
+    `;
+    
+    const result = await model.generateContent([
+        {
+            fileData: {
+                mimeType: uploadResult.file.mimeType,
+                fileUri: uploadResult.file.uri
+            }
+        },
+        { text: prompt }
+    ]);
+    
+    // 4. Cleanup the file from Gemini
+    await fileManager.deleteFile(uploadResult.file.name);
+    
+    let output = result.response.text().trim();
+    output = output.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
+    const evaluation = JSON.parse(output);
 
     // 4. Update MongoDB
     const updatedRecord = await InterviewAnalysis.findByIdAndUpdate(

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FileText, Search, Bot } from "lucide-react";
+import { FileText, Search, Bot, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom"; 
 import { motion } from "framer-motion";
 
@@ -17,7 +17,7 @@ const ToolsSection = () => {
       description:
         "Create professional resumes with AI-powered suggestions and smart formatting",
       icon: <FileText className="w-12 h-12 text-orange-400" />,
-      link: "#",
+      link: "/resume-builder",
     },
     {
       title: "Resume Analyzer",
@@ -79,8 +79,16 @@ const ToolsSection = () => {
                 {card.icon}
               </div>
 
-              {/* Title */}
-              <h3 className="mt-4 text-xl font-bold">{card.title}</h3>
+              {/* Title and Chevron */}
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <h3 className="text-xl font-bold">{card.title}</h3>
+                <motion.div
+                  animate={{ rotate: showInterviews ? 180 : 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                </motion.div>
+              </div>
 
               {/* Description */}
               <p className="text-gray-300 text-sm text-center px-2 mb-4">

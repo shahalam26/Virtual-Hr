@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../apiClient';
@@ -7,6 +7,19 @@ import { AppContent } from '../context/AppContextValue';
  const  Navbar =()=> {
   const navigate = useNavigate();
   const { userData, setUserData, setIsLoggedIn } = useContext(AppContent);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // 🔹 Logout function - unchanged, just added comments for readability
   const logout = async () => {
@@ -54,22 +67,28 @@ import { AppContent } from '../context/AppContextValue';
       <div className="flex gap-4 items-center">
         {userData ? (
           // ✅ If logged in → show profile circle with logout option
-          <div className="w-8 h-8 flex justify-center items-center rounded-full bg-gray-800 cursor-pointer text-gray-100 relative group">
+          <div 
+            ref={dropdownRef}
+            className="w-8 h-8 flex justify-center items-center rounded-full bg-gray-800 cursor-pointer text-gray-100 relative"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          >
             {userData?.name?.[0]?.toUpperCase() || "U"}
 
-            <div className="absolute hidden group-hover:block top-5 right-0 z-10 bg-white text-black rounded shadow-lg mt-2 w-32">
-              <ul className="text-sm p-2 space-y-1 list-none">
-                <li onClick={() => navigate('/progress')} className="hover:text-blue-500 cursor-pointer mb-2">
-                  My Progress
-                </li>
-                <li onClick={() => navigate('/interview/video')} className="hover:text-blue-500 cursor-pointer mb-2">
-                  Video Interview
-                </li>
-                <li onClick={logout} className="hover:text-blue-500 cursor-pointer border-t pt-2">
-                  Logout
-                </li>
-              </ul>
-            </div>
+            {isDropdownOpen && (
+              <div className="absolute top-10 right-0 z-10 bg-[#101828] text-gray-200 border border-gray-700/50 rounded-xl shadow-2xl mt-2 w-44 overflow-hidden backdrop-blur-md">
+                <ul className="text-sm list-none flex flex-col">
+                  <li onClick={() => { navigate('/progress'); setIsDropdownOpen(false); }} className="hover:bg-gray-800 hover:text-sky-400 cursor-pointer px-4 py-3 transition-colors flex items-center gap-2">
+                    My Progress
+                  </li>
+                  <li onClick={() => { navigate('/interview/video'); setIsDropdownOpen(false); }} className="hover:bg-gray-800 hover:text-sky-400 cursor-pointer px-4 py-3 transition-colors flex items-center gap-2">
+                    Video Interview
+                  </li>
+                  <li onClick={() => { logout(); setIsDropdownOpen(false); }} className="hover:bg-red-500/10 hover:text-red-400 text-red-400 cursor-pointer border-t border-gray-700/50 px-4 py-3 transition-colors flex items-center gap-2">
+                    Logout
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
         ) : (
           // ✅ If NOT logged in → show Login + Signup buttons

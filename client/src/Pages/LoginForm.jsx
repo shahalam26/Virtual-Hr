@@ -31,13 +31,6 @@ const LoginForm = () => {
     }
   };
 
-  const handleGoogleLogin = (e) => {
-    e.preventDefault()
-  
-    window.location.href = `${backendUrl}/auth/google`;
-  
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-black text-gray-100 px-4">
       <form
@@ -72,13 +65,7 @@ const LoginForm = () => {
         >
           {loading ? "Logging in..." : "Login"}
         </button>
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          className="w-full py-3 rounded bg-white text-black hover:bg-amber-50 mb-4"
-        >
-          Login with Google
-        </button>
+
         <div className="flex justify-between text-sm">
           <Link to="/signup" className="underline text-blue-400">
             Sign Up

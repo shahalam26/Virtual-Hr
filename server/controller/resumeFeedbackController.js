@@ -22,10 +22,24 @@ export const getFeedback = async (req, res) => {
       `;
     }
 
+    const schema = {
+      type: "object",
+      properties: {
+        "ATS Score": { type: "number", description: "ATS Score out of 100" },
+        "Strengths": { type: "array", items: { type: "string" } },
+        "Weaknesses": { type: "array", items: { type: "string" } },
+        "Suggestions": { type: "array", items: { type: "string" } },
+        "Extracted Skills": { type: "array", items: { type: "string" } },
+        "Summary": { type: "string", description: "short professional summary noting improvements from past" }
+      },
+      required: ["ATS Score", "Strengths", "Weaknesses", "Suggestions", "Extracted Skills", "Summary"]
+    };
+
     const model = getGeminiClient().getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseSchema: schema
       }
     });
 
@@ -33,31 +47,28 @@ export const getFeedback = async (req, res) => {
 You are an ATS (Applicant Tracking System) resume analyzer.
 ${progressContext}
 
-Analyze the following resume text and respond ONLY with a valid JSON object.
-Use this EXACT JSON format:
-
-{
-  "ATS Score": <number 0-100>,
-  "Strengths": ["list of strengths"],
-  "Weaknesses": ["list of weaknesses"],
-  "Suggestions": ["list of improvements"],
-  "Extracted Skills": ["list of technical skills"],
-  "Summary": "short professional summary noting improvements from past"
-}
-
+Analyze the following resume text and provide the feedback.
 Resume Text:
 ${text}
 `;
 
     const result = await model.generateContent(prompt);
     let output = result.response.text();
-    output = output.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
+    
+    // Clean up the output in case it's wrapped in markdown or contains extra text
+    output = output.replace(/```json/g, "").replace(/```/g, "").trim();
+    const startIndex = output.indexOf('{');
+    const endIndex = output.lastIndexOf('}');
+    if (startIndex !== -1 && endIndex !== -1) {
+      output = output.substring(startIndex, endIndex + 1);
+    }
     
     let parsedData = {};
     try {
       parsedData = JSON.parse(output);
-    } catch {
+    } catch (parseError) {
       console.error("Invalid JSON:", output);
+      console.error("Parse Error:", parseError);
       return res.status(500).json({ error: "Invalid JSON from AI" });
     }
 

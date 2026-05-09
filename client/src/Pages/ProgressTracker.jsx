@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../apiClient";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const ProgressTracker = () => {
   const [resumeHistory, setResumeHistory] = useState([]);
@@ -31,6 +32,47 @@ const ProgressTracker = () => {
         <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-indigo-500 mb-10 text-center">
           My Progress Dashboard
         </h1>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
+          <div className="bg-[#101828] border border-gray-700 rounded-xl p-6 shadow-lg">
+            <h3 className="text-xl font-semibold mb-4 text-pink-400 text-center">Resume Score Trend</h3>
+            <div className="h-64 w-full">
+              {resumeHistory.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={[...resumeHistory].reverse()}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="createdAt" tickFormatter={(tick) => new Date(tick).toLocaleDateString()} stroke="#9CA3AF" />
+                    <YAxis domain={[0, 100]} stroke="#9CA3AF" />
+                    <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                    <Line type="monotone" dataKey="score" stroke="#EC4899" strokeWidth={3} dot={{ r: 5 }} name="ATS Score" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-gray-500">Not enough data</div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-[#101828] border border-gray-700 rounded-xl p-6 shadow-lg">
+            <h3 className="text-xl font-semibold mb-4 text-cyan-400 text-center">Interview Score Trend</h3>
+            <div className="h-64 w-full">
+              {interviewHistory.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={[...interviewHistory].reverse()}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="createdAt" tickFormatter={(tick) => new Date(tick).toLocaleDateString()} stroke="#9CA3AF" />
+                    <YAxis domain={[0, 100]} stroke="#9CA3AF" />
+                    <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                    <Line type="monotone" dataKey="score" stroke="#06B6D4" strokeWidth={3} dot={{ r: 5 }} name="Interview Score" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-gray-500">Not enough data</div>
+              )}
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           

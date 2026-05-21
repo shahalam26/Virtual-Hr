@@ -8,6 +8,14 @@ export const AppProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get("token");
+    if (token) {
+      localStorage.setItem("authToken", token);
+      url.searchParams.delete("token");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+
     const fetchUser = async () => {
       try {
         const res = await api.get("/auth/me"); // 👈 cookie sent automatically

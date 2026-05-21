@@ -18,6 +18,9 @@ const LoginForm = () => {
     setLoading(true);
     try {
       const res = await api.post("/auth/login", formData);
+      if (res.data.token) {
+        localStorage.setItem("authToken", res.data.token);
+      }
       // Update App context
       setUserData(res.data.user);
       setIsLoggedIn(true);

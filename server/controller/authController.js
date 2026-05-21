@@ -114,6 +114,7 @@ res.cookie("token", token, authCookieOptions);
 
 res.status(200).json({ 
   message: "Login successful", 
+  token,
   user: { name: user.name, email: user.email } 
 });
 
@@ -141,7 +142,9 @@ export const googleCallback = async (req, res) => {
 
     res.cookie("token", token, authCookieOptions);
 
-    res.redirect(`${process.env.CLIENT_URL}`);
+    const redirectUrl = new URL(process.env.CLIENT_URL);
+    redirectUrl.searchParams.set("token", token);
+    res.redirect(redirectUrl.toString());
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Google login failed" });

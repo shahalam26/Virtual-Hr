@@ -26,6 +26,7 @@ import { AppContent } from '../context/AppContextValue';
     try {
       const { data } = await api.post('/auth/logout');
       if (data.message === "Logged out successfully") {
+        localStorage.removeItem("authToken");
         setIsLoggedIn(false);
         setUserData(null);
         toast.success('Logged out successfully!');

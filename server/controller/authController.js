@@ -3,6 +3,22 @@ import bcrypt from "bcrypt";
 import { generateOtp, otpExpiryIn, sendOTPEmail } from "../utils/mailer.js";
 import { signToken } from "../utils/jwt.js";
 
+const isProductionCookie =
+  process.env.NODE_ENV === "production" || process.env.CLIENT_URL?.startsWith("https://");
+
+const authCookieOptions = {
+  httpOnly: true,
+  secure: isProductionCookie,
+  sameSite: isProductionCookie ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+const clearAuthCookieOptions = {
+  httpOnly: true,
+  secure: isProductionCookie,
+  sameSite: isProductionCookie ? "none" : "lax",
+};
+
 // -------------------- REGISTER USER --------------------
 export const registerUser = async (req, res) => {
   try {
@@ -94,12 +110,7 @@ export const loginUser = async (req, res) => {
 
     // 5️⃣ Send response
     // 5️⃣ Send response with cookie
-res.cookie("token", token, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production", 
-  sameSite: "strict",
-  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-});
+res.cookie("token", token, authCookieOptions);
 
 res.status(200).json({ 
   message: "Login successful", 
@@ -117,11 +128,7 @@ res.status(200).json({
 
 // -------------------- LOGOUT USER --------------------
 export const logoutUser = (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict"
-  });
+  res.clearCookie("token", clearAuthCookieOptions);
   res.json({ message: "Logged out successfully" });
 };
 
@@ -132,12 +139,7 @@ export const googleCallback = async (req, res) => {
   try {
     const token = signToken({ id: req.user._id, email: req.user.email });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", 
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    res.cookie("token", token, authCookieOptions);
 
     res.redirect(`${process.env.CLIENT_URL}`);
   } catch (error) {

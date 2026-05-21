@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
-import axios from "axios";
-import { BACKEND_URL } from "../config/api";
+import api from "../apiClient";
 import * as pdfjsLib from "pdfjs-dist";
 
 // PDF worker
@@ -119,11 +118,7 @@ const VoiceInterview = () => {
 
       setIsTyping(true);
 
-      const res = await axios.post(
-        `${BACKEND_URL}/api/start-interview`,
-        { userId, resumeText },
-        { withCredentials: true }
-      );
+      const res = await api.post("/api/interview/start", { userId, resumeText });
 
       const firstQ = res.data.reply;
 
@@ -150,11 +145,7 @@ const VoiceInterview = () => {
     try {
       setIsTyping(true);
 
-      const res = await axios.post(
-        `${BACKEND_URL}/api/interview`,
-        { userId, message: text },
-        { withCredentials: true }
-      );
+      const res = await api.post("/api/interview/reply", { userId, message: text });
 
       const reply = res.data.reply;
 

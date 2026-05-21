@@ -26,6 +26,17 @@ const VideoInterviewPage = () => {
   const capturedFramesRef = useRef([]);
   const frameIntervalRef = useRef(null);
 
+  const stopWebcam = useCallback(() => {
+    const stream = videoRef.current?.srcObject;
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
+
   const startWebcam = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -33,6 +44,7 @@ const VideoInterviewPage = () => {
         videoRef.current.srcObject = stream;
       }
       
+      chunksRef.current = [];
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -75,6 +87,7 @@ const VideoInterviewPage = () => {
   
   const stopFrameCapture = () => {
     if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+    frameIntervalRef.current = null;
   };
 
 
@@ -84,12 +97,10 @@ const VideoInterviewPage = () => {
       mediaRecorderRef.current.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: 'video/webm' });
         
-        // Stop all tracks to turn off camera light
-        const stream = videoRef.current.srcObject;
-        if (stream) {
-           const tracks = stream.getTracks();
-           tracks.forEach(track => track.stop());
-        }
+        // Stop all tracks immediately after the interview so the camera/mic lights turn off.
+        stopWebcam();
+
+        if (!interviewId) return;
         
         // Upload video
         setAnalyzingVideo(true);
@@ -112,6 +123,8 @@ const VideoInterviewPage = () => {
       
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+    } else {
+      stopWebcam();
     }
   };
 
@@ -132,8 +145,12 @@ const VideoInterviewPage = () => {
        stopFrameCapture();
        recognitionRef.current?.stop();
        window.speechSynthesis?.cancel();
+       if (mediaRecorderRef.current?.state === "recording") {
+         mediaRecorderRef.current.stop();
+       }
+       stopWebcam();
     }
-  }, []);
+  }, [stopWebcam]);
 
   const speak = (text, isFinished = false) => {
     window.speechSynthesis.cancel();
@@ -230,6 +247,7 @@ const VideoInterviewPage = () => {
       speak(data.reply);
     } catch (error) {
       console.error(error);
+      stopWebcam();
       alert(error.response?.data?.error || "Failed to start interview");
     } finally {
       setIsTyping(false);
@@ -260,6 +278,8 @@ const VideoInterviewPage = () => {
         setEvaluation(data.evaluation);
         if (data.interviewId) {
            stopRecordingAndAnalyze(data.interviewId);
+        } else {
+          stopRecordingAndAnalyze(null);
         }
       }
     } catch (error) {
@@ -507,4 +527,3 @@ const VideoInterviewPage = () => {
 };
 
 export default VideoInterviewPage;
-

@@ -133,8 +133,7 @@
 
 // export default Chat;
 import { useState, useRef, useEffect } from "react";
-import axios from "axios";
-import { BACKEND_URL } from "../config/api";
+import api from "../apiClient";
 import * as pdfjsLib from "pdfjs-dist";
 
 // PDF Worker setup
@@ -184,11 +183,7 @@ function Chat() {
   const startInterview = async () => {
     try {
       setIsTyping(true);
-      const res = await axios.post(
-        `${BACKEND_URL}/api/start-interview`,
-        { resumeText, userId },
-        { withCredentials: true } // ✅ added
-      );
+      const res = await api.post("/api/interview/start", { resumeText, userId });
       setMessages([{ role: "assistant", content: res.data.reply }]);
       setStarted(true);
     } catch (err) {
@@ -209,11 +204,7 @@ function Chat() {
 
     try {
       setIsTyping(true);
-      const res = await axios.post(
-        `${BACKEND_URL}/api/interview`,
-        { userId, message: input },
-        { withCredentials: true } // ✅ added
-      );
+      const res = await api.post("/api/interview/reply", { userId, message: input });
 
       const aiReply = res.data.reply;
       setMessages([...newMessages, { role: "assistant", content: aiReply }]);
